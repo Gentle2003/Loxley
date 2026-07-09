@@ -1,0 +1,19 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Foundry
+out/
+cache/
+broadcast/
+lib/
+
+# Node (frontend, once ported to React)
+node_modules/
+dist/
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
