@@ -28,7 +28,7 @@ export default function Footer() {
           </div>
           <div>
             <h5>Reality</h5>
-            <span className="soon">Base Sepolia only</span>
+            <span className="soon">Robinhood Chain testnet</span>
             <span className="soon">Unaudited</span>
             <span className="soon">No token sale</span>
           </div>
@@ -36,7 +36,7 @@ export default function Footer() {
       </div>
 
       <div className="wrap foot-fine">
-        <span>Prototype · testnet only · not financial advice.</span>
+        <span>Prototype · testnet only · not financial advice · not affiliated with Robinhood.</span>
         <span className="mono">Sherwood.sol + Arrow.sol</span>
       </div>
 

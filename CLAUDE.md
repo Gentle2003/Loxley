@@ -28,7 +28,9 @@ skin; the substance is per-repo dividend tokens.
 
 These are hard constraints, not preferences:
 
-- **Testnet only.** Deploy to Base Sepolia. Never mainnet in this MVP.
+- **Testnet only.** Deploy to **Robinhood Chain testnet** (EVM-compatible Arbitrum
+  L2, chain ID 46630, gas token ETH). Never mainnet in this MVP — the contracts are
+  unaudited. (RH Chain mainnet is chain ID 4663; do not target it.)
 - **No public token sale.** Do not build minting-for-sale, presale, ICO, or
   fundraising flows. Arrows are minted to the registrant; there is no sale.
 - **Do not create a $LOX token contract.** It's branding only until deliberately
@@ -38,6 +40,9 @@ These are hard constraints, not preferences:
 - **Securities reality.** A token representing a claim on cashflow is likely a
   security. Don't add features that push it toward an unregistered public offering.
 - **Not audited.** Don't tell users the contracts are safe to hold real value.
+- **Not affiliated with Robinhood.** Loxley deploys on Robinhood Chain (which is
+  permissionless — no approval needed) but is an independent project. Never imply
+  endorsement by, or affiliation with, Robinhood in the UI, brand, or copy.
 
 ## 3. Architecture
 
@@ -198,7 +203,8 @@ Missing 20%, in priority order:
 
 ## 8. Stack & conventions
 
-- Contracts: Solidity ^0.8.20, OpenZeppelin v5, Foundry. Deploy to Base Sepolia.
+- Contracts: Solidity ^0.8.20, OpenZeppelin v5, Foundry. Deploy to Robinhood Chain
+  testnet (chain ID 46630, EVM-compatible Arbitrum L2, gas token ETH).
 - Frontend: React + Vite (scaffolded in `src/`, router in `App.jsx`). Chain is
   mocked during the design phase via `src/mocks/fakeChain.js` (ports the exact
   tribute/bounty math). Wire viem/wagmi at roadmap #3 — keep the flows/vocabulary.

@@ -11,8 +11,10 @@ remappings = [
     "forge-std/=lib/forge-std/src/",
 ]
 
+# Robinhood Chain testnet — EVM-compatible Arbitrum L2, chain ID 46630, gas token ETH.
 [rpc_endpoints]
-base_sepolia = "${BASE_SEPOLIA_RPC}"
+rh_testnet = "${RH_TESTNET_RPC}"
 
+# Verification uses the testnet Blockscout explorer (API key usually not required).
 [etherscan]
-base_sepolia = { key = "${ETHERSCAN_API_KEY}", url = "https://api-sepolia.basescan.org/api" }
+rh_testnet = { key = "${BLOCKSCOUT_API_KEY}", chain = 46630, url = "https://explorer.testnet.chain.robinhood.com/api/" }

@@ -9,7 +9,9 @@ import {Sherwood} from "../contracts/Sherwood.sol";
  * demo repos so the app isn't empty on first load.
  *
  *   forge script script/Deploy.s.sol \
- *     --rpc-url $BASE_SEPOLIA_RPC --broadcast --verify -vvvv
+ *     --rpc-url $RH_TESTNET_RPC --broadcast -vvvv
+ *
+ * Target: Robinhood Chain testnet (chain ID 46630). See README + .env.example.
  */
 contract Deploy is Script {
     function run() external {

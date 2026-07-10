@@ -55,18 +55,19 @@ many holders exist:
 That's the whole idea in ~40 lines: a repo becomes something money flows into, and
 Arrow holders have a real on-chain claim on it proportional to what they hold.
 
-## Deploy to Base Sepolia
+## Deploy to Robinhood Chain testnet
 
-Prereqs: [Foundry](https://book.getfoundry.sh/), a funded Base Sepolia test wallet
-([faucet](https://docs.base.org/tools/network-faucets)).
+Loxley targets **Robinhood Chain testnet** — an EVM-compatible Arbitrum L2 (chain
+ID `46630`, gas token ETH). Prereqs: [Foundry](https://book.getfoundry.sh/) and a
+funded testnet wallet (see the [Robinhood Chain docs](https://docs.robinhood.com/chain/)).
 
 ```bash
 forge init --force --no-git .              # if starting a fresh forge project here
 forge install OpenZeppelin/openzeppelin-contracts foundry-rs/forge-std
-cp .env.example .env                       # fill in PRIVATE_KEY + RPC, never commit it
+cp .env.example .env                       # fill in PRIVATE_KEY + RH_TESTNET_RPC, never commit it
 source .env
 forge build
-forge script script/Deploy.s.sol --rpc-url $BASE_SEPOLIA_RPC --broadcast -vvvv
+forge script script/Deploy.s.sol --rpc-url $RH_TESTNET_RPC --broadcast -vvvv
 ```
 
 Take the deployed `Sherwood` address and point a frontend at it (wagmi/viem or ethers).
