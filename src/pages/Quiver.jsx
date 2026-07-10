@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChain } from "../store/ChainProvider.jsx";
 import Drawer from "../components/Drawer.jsx";
+import { resolveRepo, parseRepoInput } from "../lib/indexer.js";
 import { fmt, eth, ago } from "../mocks/fakeChain.js";
 
 const LANGS = ["TypeScript", "Python", "Go", "Rust", "C", "Solidity"];
@@ -89,7 +90,7 @@ export default function Quiver() {
         subtitle="Records the repo in Sherwood and mints its full Arrow supply to you. This is registerRepo()."
       >
         <RegisterForm
-          onSubmit={async (form) => { if (await registerRepo(form)) setOpen(false); }}
+          onSubmit={async (form) => { const ok = await registerRepo(form); if (ok) setOpen(false); return ok; }}
           disabled={!connected}
         />
       </Drawer>
@@ -99,17 +100,80 @@ export default function Quiver() {
   );
 }
 
+const suggestSymbol = (fullName) =>
+  (fullName.split("/")[1] || "").replace(/[^a-zA-Z0-9]/g, "").slice(0, 5).toUpperCase();
+
+function RepoStatus({ status, resolved }) {
+  if (status === "idle") return null;
+  if (status === "checking") return <p className="reg-status mute">Checking GitHub…</p>;
+  if (status === "found" && resolved)
+    return (
+      <p className="reg-status ok">
+        → {resolved.fullName} · ★ {resolved.stars.toLocaleString("en-US")}
+        {resolved.language ? ` · ${resolved.language}` : ""} ✓
+      </p>
+    );
+  if (status === "notfound") return <p className="reg-status err">No public repo found on GitHub — check the link.</p>;
+  if (status === "invalid") return <p className="reg-status err">Enter a GitHub URL or owner/name.</p>;
+  if (status === "error") return <p className="reg-status warn">Couldn't reach GitHub to verify — you can still register.</p>;
+  return null;
+}
+
 function RegisterForm({ onSubmit }) {
   const [repo, setRepo] = useState("");
   const [language, setLanguage] = useState(LANGS[0]);
   const [symbol, setSymbol] = useState("");
   const [supply, setSupply] = useState("1000000");
+  const [status, setStatus] = useState("idle"); // idle|checking|found|notfound|invalid|error
+  const [resolved, setResolved] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const debounce = useRef(null);
+  const reqId = useRef(0);
+  const symbolTouched = useRef(false);
+
+  // Resolve + verify the GitHub repo as the user types (debounced).
+  useEffect(() => {
+    clearTimeout(debounce.current);
+    setResolved(null);
+    const val = repo.trim();
+    if (!val) { setStatus("idle"); return; }
+    setStatus("checking");
+    const id = ++reqId.current;
+    debounce.current = setTimeout(async () => {
+      const res = await resolveRepo(val);
+      if (id !== reqId.current) return; // superseded by a newer keystroke
+      setStatus(res.status);
+      if (res.status === "found") {
+        setResolved(res.meta);
+        const lang = LANGS.find((l) => l.toLowerCase() === (res.meta.language || "").toLowerCase());
+        if (lang) setLanguage(lang);
+        if (!symbolTouched.current) setSymbol(suggestSymbol(res.meta.fullName));
+      }
+    }, 450);
+    return () => clearTimeout(debounce.current);
+  }, [repo]);
+
+  const canSubmit = (status === "found" || status === "error") && !busy;
+
+  const handle = async () => {
+    if (!canSubmit) return;
+    const repoFullName = status === "found" && resolved ? resolved.fullName : parseRepoInput(repo);
+    if (!repoFullName) { setStatus("invalid"); return; }
+    setBusy(true);
+    const ok = await onSubmit({ repoFullName, language, symbol, supply });
+    setBusy(false);
+    if (ok) { // reset for the next registration
+      setRepo(""); setSymbol(""); setSupply("1000000"); setLanguage(LANGS[0]);
+      setStatus("idle"); setResolved(null); symbolTouched.current = false;
+    }
+  };
 
   return (
     <div className="reg">
       <div className="reg-field">
-        <label>GitHub repo (owner/name)</label>
-        <input value={repo} onChange={(e) => setRepo(e.target.value)} placeholder="your-org/your-lib" />
+        <label>GitHub repo — paste a URL or owner/name</label>
+        <input value={repo} onChange={(e) => setRepo(e.target.value)} placeholder="https://github.com/owner/name" />
+        <RepoStatus status={status} resolved={resolved} />
       </div>
       <div className="reg-row">
         <div className="reg-field">
@@ -120,16 +184,17 @@ function RegisterForm({ onSubmit }) {
         </div>
         <div className="reg-field">
           <label>Arrow symbol</label>
-          <input value={symbol} maxLength={6} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="YLIB" />
+          <input value={symbol} maxLength={6} placeholder="YLIB"
+            onChange={(e) => { symbolTouched.current = true; setSymbol(e.target.value.toUpperCase()); }} />
         </div>
       </div>
       <div className="reg-field">
         <label>Initial supply</label>
         <input type="number" value={supply} onChange={(e) => setSupply(e.target.value)} />
       </div>
-      <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center", marginTop: 6 }}
-        onClick={() => onSubmit({ repoFullName: repo, language, symbol, supply })}>
-        Register &amp; mint to me
+      <button className="btn btn-primary" disabled={!canSubmit}
+        style={{ width: "100%", justifyContent: "center", marginTop: 6 }} onClick={handle}>
+        {busy ? "Registering…" : "Register & mint to me"}
       </button>
       <p className="reg-note">
         Testnet only · no token sale · Arrows are minted to you, the registrant.
@@ -170,6 +235,11 @@ const styles = `
 .reg-row { display: flex; gap: 12px; }
 .reg-row .reg-field { flex: 1; }
 .reg-field label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-mute); }
+.reg-status { font-size: 12.5px; margin-top: 5px; font-family: var(--font-mono); line-height: 1.4; }
+.reg-status.ok { color: var(--green); }
+.reg-status.err { color: var(--danger); }
+.reg-status.warn { color: var(--cash); }
+.reg-status.mute { color: var(--text-mute); }
 .reg-note { color: var(--text-mute); font-size: 12px; text-align: center; margin-top: 4px; }
 
 @media (max-width: 760px) {

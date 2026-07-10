@@ -108,6 +108,7 @@ p { margin: 0; }
 .btn-ghost { background: transparent; color: var(--text); border-color: var(--line-hi); }
 .btn-ghost:hover { border-color: var(--green); color: var(--green); }
 .btn-sm { padding: 9px 14px; font-size: 14px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
 
 /* ---- pills / chips ---- */
 .pill {
