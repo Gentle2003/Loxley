@@ -3,11 +3,11 @@
 .env.*
 !.env.example
 
-# Foundry
-out/
-cache/
-broadcast/
-lib/
+# Foundry (anchor to root so it doesn't swallow src/lib/)
+/out/
+/cache/
+/broadcast/
+/lib/
 
 # Node (frontend, once ported to React)
 node_modules/

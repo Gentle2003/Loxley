@@ -58,7 +58,7 @@ export default function RepoDetail() {
             <div className="act-row">
               <input type="number" step="0.01" placeholder="0.5" value={tribAmt}
                 onChange={(e) => setTribAmt(e.target.value)} />
-              <button className="btn btn-cash" onClick={() => { if (tribute(r.id, tribAmt)) setTribAmt(""); }}>
+              <button className="btn btn-cash" onClick={async () => { if (await tribute(r.id, tribAmt)) setTribAmt(""); }}>
                 Pay tribute
               </button>
             </div>
@@ -86,7 +86,7 @@ export default function RepoDetail() {
               <div className="act-row">
                 <input type="number" placeholder="100000" value={stakeAmt}
                   onChange={(e) => setStakeAmt(e.target.value)} />
-                <button className="btn btn-primary" onClick={() => { if (takeStake(r.id, stakeAmt)) setStakeAmt(""); }}>
+                <button className="btn btn-primary" onClick={async () => { if (await takeStake(r.id, stakeAmt)) setStakeAmt(""); }}>
                   Take stake
                 </button>
               </div>

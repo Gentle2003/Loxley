@@ -89,7 +89,7 @@ export default function Quiver() {
         subtitle="Records the repo in Sherwood and mints its full Arrow supply to you. This is registerRepo()."
       >
         <RegisterForm
-          onSubmit={(form) => { if (registerRepo(form)) setOpen(false); }}
+          onSubmit={async (form) => { if (await registerRepo(form)) setOpen(false); }}
           disabled={!connected}
         />
       </Drawer>
