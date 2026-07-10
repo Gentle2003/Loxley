@@ -8,6 +8,8 @@
 /cache/
 /broadcast/
 /lib/
+/foundry.lock
+/.gitmodules
 
 # Node (frontend, once ported to React)
 node_modules/
