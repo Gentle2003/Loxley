@@ -28,17 +28,24 @@ skin; the substance is per-repo dividend tokens.
 
 These are hard constraints, not preferences:
 
-- **Testnet only.** Deploy to **Robinhood Chain testnet** (EVM-compatible Arbitrum
-  L2, chain ID 46630, gas token ETH). Never mainnet in this MVP — the contracts are
-  unaudited. (RH Chain mainnet is chain ID 4663; do not target it.)
-- **No public token sale.** Do not build minting-for-sale, presale, ICO, or
-  fundraising flows. Arrows are minted to the registrant; there is no sale.
+- **Testnet until audited + legally reviewed.** Deploy to **Robinhood Chain testnet**
+  (EVM-compatible Arbitrum L2, chain ID 46630, gas token ETH). Owner intends a real
+  mainnet market eventually (RH Chain mainnet is chain ID 4663), but **do not target
+  mainnet** until the contracts are audited AND securities/legal counsel has cleared
+  the market. The assistant builds the testnet prototype only, never the real-money
+  public offering.
+- **Market = secondary AMM on testnet (prototype).** A per-Arrow constant-product
+  (x*y=k) AMM for trading EXISTING Arrows is in scope as a clearly-labeled testnet
+  prototype (`Market.sol`). Still **no primary minting-for-sale, presale, or ICO** —
+  Arrows are minted only by `registerRepo`; the market just trades what exists.
 - **Do not create a $LOX token contract.** It's branding only until deliberately
   designed later. If a task implies "launch the token," stop and flag it.
 - **Honesty in the UI.** Keep the PROTOTYPE / testnet labeling. Never present
   simulated or testnet state as real value.
-- **Securities reality.** A token representing a claim on cashflow is likely a
-  security. Don't add features that push it toward an unregistered public offering.
+- **Securities reality (now sharper).** Once Arrows are tradeable-for-profit AND pay
+  cashflow, they are almost certainly securities. Before ANY real-money / public /
+  mainnet launch of the market, the owner MUST obtain securities & legal review. Do
+  not help stand up an unregistered public offering.
 - **Not audited.** Don't tell users the contracts are safe to hold real value.
 - **Not affiliated with Robinhood.** Loxley deploys on Robinhood Chain (which is
   permissionless — no approval needed) but is an independent project. Never imply
@@ -225,15 +232,20 @@ Missing 20%, in priority order:
 ```
 contracts/Sherwood.sol     registry + factory
 contracts/Arrow.sol        per-repo ERC-20 with tribute/bounty
-script/Deploy.s.sol        Foundry deploy + seed
+contracts/Market.sol       per-Arrow constant-product AMM (buy/sell Arrows for ETH)
+script/Deploy.s.sol        Foundry deploy (Sherwood + seed)
+script/DeployMarket.s.sol  Foundry deploy (Market, standalone)
+test/Market.t.sol          Foundry tests for the AMM
 foundry.toml, remappings.txt, .env.example
 
-src/                       React + Vite app (design + workflow phase)
+src/                       React + Vite app
   main.jsx, App.jsx        entry + router (/ /quiver /repo/:id /portfolio)
   index.css                Robin Neon theme tokens (see §8)
-  components/              Nav, Footer, Logo, Reveal
-  pages/                   Landing (done) · Quiver, RepoDetail, Portfolio (stubs)
-  mocks/fakeChain.js       in-memory Sherwood+Arrow (tribute/bounty math + seed data)
+  components/              Nav, Footer, Logo, Reveal, Drawer, ScrollToTop
+  pages/                   Landing, Quiver, RepoDetail, Portfolio
+  store/ChainProvider.jsx  mock/live split (VITE_SHERWOOD_ADDRESS = live)
+  lib/                     rhChain, abis, sherwood, indexer (GitHub + holders)
+  mocks/fakeChain.js       in-memory Sherwood+Arrow (design/mock mode)
 index.html, vite.config.js, package.json
 frontend/index.html        original vanilla prototype, kept as UX reference
 
