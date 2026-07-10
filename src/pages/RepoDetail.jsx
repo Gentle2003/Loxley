@@ -1,14 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useChain } from "../store/ChainProvider.jsx";
+import { readHolders } from "../lib/indexer.js";
+import { short } from "../lib/sherwood.js";
 import { balanceOf, bountyOf, fmt, eth, ago } from "../mocks/fakeChain.js";
 
 export default function RepoDetail() {
   const { id } = useParams();
-  const { getRepo, connected, me: ME, tribute, bounty, takeStake } = useChain();
+  const { getRepo, connected, me: ME, mode, tribute, bounty, takeStake } = useChain();
   const r = getRepo(id);
   const [tribAmt, setTribAmt] = useState("");
   const [stakeAmt, setStakeAmt] = useState("");
+  const [liveHolders, setLiveHolders] = useState(null);
+
+  // Live mode: reconstruct the full holder set from Transfer logs (a chain read
+  // alone only knows the connected user). Best-effort — falls back on failure.
+  useEffect(() => {
+    setLiveHolders(null);
+    if (mode !== "live" || !r?.arrow) return;
+    let cancelled = false;
+    readHolders(r.arrow).then((h) => { if (!cancelled && h) setLiveHolders(h); });
+    return () => { cancelled = true; };
+  }, [mode, r?.arrow]);
 
   if (!r)
     return (
@@ -23,8 +36,13 @@ export default function RepoDetail() {
   const myBounty = connected ? bountyOf(r, ME) : 0;
   const iOwn = connected && r.owner === ME;
   const ownerHasSupply = balanceOf(r, r.owner) > 0;
-  const holders = Object.entries(r.holders).filter(([, b]) => b > 0).sort((a, b) => b[1] - a[1]);
+  const holders = (mode === "live" && liveHolders)
+    ? liveHolders.map((h) => [h.address, h.balance])
+    : Object.entries(r.holders).filter(([, b]) => b > 0).sort((a, b) => b[1] - a[1]);
   const pct = (part) => (r.supply ? ((part / r.supply) * 100).toFixed(1) + "%" : "0%");
+  const isAddr = (a) => /^0x[0-9a-fA-F]{40}$/.test(a);
+  const showAddr = (a) => (isAddr(a) ? short(a) : a);        // shorten full 0x addresses (live)
+  const isYou = (a) => a === ME || (isAddr(a) && short(a) === ME);
 
   return (
     <div className="wrap rd">
@@ -36,6 +54,7 @@ export default function RepoDetail() {
           <span className="sym">${r.symbol}</span> Arrow · {r.language} · ★ {fmt(r.stars)} ·
           registered {ago(r.registeredAt)}
         </p>
+        {r.description && <p className="rd-desc">{r.description}</p>}
         <a className="rd-gh" href={`https://github.com/${r.repoFullName}`} target="_blank" rel="noreferrer">
           View on GitHub ↗
         </a>
@@ -106,7 +125,7 @@ export default function RepoDetail() {
           {holders.map(([addr, bal]) => (
             <div className="hr" key={addr}>
               <span className="mono">
-                {addr}{addr === ME && <span className="you">YOU</span>}
+                {showAddr(addr)}{isYou(addr) && <span className="you">YOU</span>}
                 {addr === r.owner && <span className="owner">OWNER</span>}
               </span>
               <span>{fmt(bal)} <span className="mute">({pct(bal)})</span></span>
@@ -136,6 +155,7 @@ const styles = `
 .rd-head { margin: 18px 0 24px; }
 .rd-head h1 { font-size: clamp(26px, 4vw, 38px); }
 .rd-meta { color: var(--text-soft); font-size: 14.5px; margin-top: 8px; }
+.rd-desc { color: var(--text); font-size: 15px; margin-top: 12px; max-width: 70ch; line-height: 1.55; }
 .rd-gh { display: inline-block; margin-top: 12px; font-size: 13.5px; color: var(--green); font-family: var(--font-mono); }
 .rd-gh:hover { text-decoration: underline; }
 

@@ -4,6 +4,7 @@ import {
   IS_LIVE, connectWallet, readQuiver, short,
   registerRepo as libRegisterRepo, tribute as libTribute, bounty as libBounty,
 } from "../lib/sherwood.js";
+import { enrichWithGithub } from "../lib/indexer.js";
 
 /* ------------------------------------------------------------------
    ChainProvider — owns the quiver + wallet + write actions.
@@ -181,7 +182,9 @@ function LiveChainProvider({ children }) {
   const refresh = useCallback(async (acct) => {
     try {
       const list = await readQuiver(acct || undefined, acct ? short(acct) : undefined);
-      setRepos(list);
+      setRepos(list);                              // show on-chain data immediately
+      const enriched = await enrichWithGithub(list); // then fill in GitHub stars/desc
+      setRepos(enriched);
     } catch (e) {
       notify(e.shortMessage || e.message || "Couldn't read the quiver");
     }
