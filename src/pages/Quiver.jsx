@@ -162,7 +162,7 @@ const styles = `
 .repo-name { display: inline-flex; align-items: center; gap: 9px; color: var(--text); font-size: 14.5px; }
 .soft { color: var(--text-soft); }
 .mute { color: var(--text-mute); }
-.r { text-align: right; justify-self: end; }
+.r { text-align: right; justify-self: end; white-space: nowrap; }
 .q-empty { padding: 46px 20px; text-align: center; color: var(--text-mute); }
 
 .reg { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }

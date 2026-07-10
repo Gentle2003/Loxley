@@ -120,8 +120,12 @@ const styles = `
 
 @media (max-width: 820px) {
   .pf-summary { grid-template-columns: 1fr; }
-  .pf-thead, .pf-line { grid-template-columns: 1.8fr 1fr 1fr; }
-  .pf-thead span:nth-child(n+4), .pf-line span:nth-child(4), .pf-line span:nth-child(5) { display: none; }
-  .pf-line span:nth-child(6) { display: block; }
+  /* keep Repo · Bounty · Collect; drop Arrow, Your Arrows, Share */
+  .pf-thead, .pf-line { grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.9fr) auto; padding: 14px 16px; gap: 10px; }
+  .pf-thead span, .pf-line span { min-width: 0; }
+  .pf-thead span:nth-child(2), .pf-thead span:nth-child(3), .pf-thead span:nth-child(4),
+  .pf-line span:nth-child(2), .pf-line span:nth-child(3), .pf-line span:nth-child(4) { display: none; }
+  .pf-repo { white-space: normal; overflow-wrap: anywhere; font-size: 13px; }
+  .pf-line .btn-sm { padding: 8px 12px; font-size: 13px; }
 }
 `;
