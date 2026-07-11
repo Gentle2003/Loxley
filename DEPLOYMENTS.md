@@ -5,6 +5,7 @@
 | Contract | Address |
 |----------|---------|
 | **Sherwood** (registry + factory) | `0x6dBF9E05dA71aF5ebd47Ad8a7F993838D9b9ac1B` |
+| **Market** (per-Arrow AMM) | `0xDbbe868E4E478ae5736B76579fd47891f3CA77b1` |
 
 Seed repos registered at deploy (each mints its own Arrow):
 
@@ -14,6 +15,6 @@ Seed repos registered at deploy (each mints its own Arrow):
 | your-org/your-lib | TypeScript | `0x2eE23593B5772B9798b5911cFd99280E78dF4331` |
 
 - Explorer: https://explorer.testnet.chain.robinhood.com/address/0x6dBF9E05dA71aF5ebd47Ad8a7F993838D9b9ac1B
-- **Frontend live mode:** set `VITE_SHERWOOD_ADDRESS` to the Sherwood address (Vercel env var), then redeploy.
+- **Frontend live mode:** set `VITE_SHERWOOD_ADDRESS` (registry) and `VITE_MARKET_ADDRESS` (AMM) as Vercel env vars, then redeploy.
 
 > Testnet only · unaudited · not affiliated with Robinhood.
