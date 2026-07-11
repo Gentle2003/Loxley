@@ -3,6 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import { useChain } from "../store/ChainProvider.jsx";
 import { readHolders } from "../lib/indexer.js";
 import { short } from "../lib/sherwood.js";
+import { IS_MARKET_LIVE } from "../lib/market.js";
+import MarketPanel from "../components/MarketPanel.jsx";
 import { balanceOf, bountyOf, fmt, eth, ago } from "../mocks/fakeChain.js";
 
 export default function RepoDetail() {
@@ -96,20 +98,24 @@ export default function RepoDetail() {
             </div>
           )}
 
-          {/* Take a stake */}
-          {connected && !iOwn && ownerHasSupply && (
-            <div className="act card">
-              <div className="act-tag act-code">Become a holder</div>
-              <h3>Take a stake</h3>
-              <p>Acquire Arrows from the owner to become a holder, then earn bounty from future tribute. (MVP moves balances; real version is a DEX trade.)</p>
-              <div className="act-row">
-                <input type="number" placeholder="100000" value={stakeAmt}
-                  onChange={(e) => setStakeAmt(e.target.value)} />
-                <button className="btn btn-primary" onClick={async () => { if (await takeStake(r.id, stakeAmt)) setStakeAmt(""); }}>
-                  Take stake
-                </button>
+          {/* Market (live) or the mock take-a-stake (design mode) */}
+          {mode === "live" && IS_MARKET_LIVE ? (
+            <MarketPanel arrow={r.arrow} symbol={r.symbol} myBal={myBal} />
+          ) : (
+            connected && !iOwn && ownerHasSupply && (
+              <div className="act card">
+                <div className="act-tag act-code">Become a holder</div>
+                <h3>Take a stake</h3>
+                <p>Acquire Arrows from the owner to become a holder, then earn bounty from future tribute. (MVP moves balances; real version is a DEX trade.)</p>
+                <div className="act-row">
+                  <input type="number" placeholder="100000" value={stakeAmt}
+                    onChange={(e) => setStakeAmt(e.target.value)} />
+                  <button className="btn btn-primary" onClick={async () => { if (await takeStake(r.id, stakeAmt)) setStakeAmt(""); }}>
+                    Take stake
+                  </button>
+                </div>
               </div>
-            </div>
+            )
           )}
 
           {!connected && (

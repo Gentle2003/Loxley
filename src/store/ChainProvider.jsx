@@ -5,6 +5,7 @@ import {
   registerRepo as libRegisterRepo, tribute as libTribute, bounty as libBounty,
 } from "../lib/sherwood.js";
 import { enrichWithGithub } from "../lib/indexer.js";
+import { buy as mktBuy, sell as mktSell, createPool as mktCreatePool } from "../lib/market.js";
 
 /* ------------------------------------------------------------------
    ChainProvider — owns the quiver + wallet + write actions.
@@ -274,18 +275,58 @@ function LiveChainProvider({ children }) {
     } catch (e) { notify(e.shortMessage || e.message || "Collect failed"); return false; }
   }, [requireWallet, account, notify, repos, meKey, refresh]);
 
-  // Trading Arrows needs a DEX (roadmap #4) — no direct on-chain "buy" yet.
+  // "Take a stake" is now the market (buy). Kept as a hint if ever shown live.
   const takeStake = useCallback(() => {
-    notify("Trading Arrows isn't live yet — needs a DEX (roadmap #4).");
+    notify("Use the market to buy Arrows.");
     return false;
   }, [notify]);
+
+  const marketBuy = useCallback(async (arrow, ethAmount) => {
+    if (!requireWallet()) return false;
+    const amt = parseFloat(ethAmount);
+    if (!amt || amt <= 0) return notify("Enter an ETH amount."), false;
+    try {
+      notify(`Buying Arrows for Ξ${amt}… confirm in your wallet`);
+      await mktBuy(walletRef.current, account, arrow, ethAmount);
+      notify("Bought Arrows");
+      await refresh(account);
+      return true;
+    } catch (e) { notify(e.shortMessage || e.message || "Buy failed"); return false; }
+  }, [requireWallet, account, notify, refresh]);
+
+  const marketSell = useCallback(async (arrow, arrowAmount) => {
+    if (!requireWallet()) return false;
+    const amt = parseFloat(arrowAmount);
+    if (!amt || amt <= 0) return notify("Enter an Arrow amount."), false;
+    try {
+      notify("Selling Arrows… confirm in your wallet (approve + sell)");
+      await mktSell(walletRef.current, account, arrow, arrowAmount);
+      notify("Sold Arrows for ETH");
+      await refresh(account);
+      return true;
+    } catch (e) { notify(e.shortMessage || e.message || "Sell failed"); return false; }
+  }, [requireWallet, account, notify, refresh]);
+
+  const marketSeed = useCallback(async (arrow, ethAmount, arrowAmount) => {
+    if (!requireWallet()) return false;
+    const e = parseFloat(ethAmount), a = parseFloat(arrowAmount);
+    if (!e || e <= 0 || !a || a <= 0) return notify("Enter ETH and Arrow amounts."), false;
+    try {
+      notify("Seeding the market… confirm in your wallet (approve + create pool)");
+      await mktCreatePool(walletRef.current, account, arrow, ethAmount, arrowAmount);
+      notify("Market created — Arrows are now tradeable");
+      await refresh(account);
+      return true;
+    } catch (err) { notify(err.shortMessage || err.message || "Seeding failed"); return false; }
+  }, [requireWallet, account, notify, refresh]);
 
   const value = useMemo(() => ({
     repos, connected, me: meKey, mode: "live",
     toggleWallet, requireWallet, notify,
     registerRepo, tribute, bounty, takeStake, collectAll,
+    marketBuy, marketSell, marketSeed,
     getRepo: (id) => repos.find((r) => String(r.id) === String(id)),
-  }), [repos, connected, meKey, toggleWallet, requireWallet, notify, registerRepo, tribute, bounty, takeStake, collectAll]);
+  }), [repos, connected, meKey, toggleWallet, requireWallet, notify, registerRepo, tribute, bounty, takeStake, collectAll, marketBuy, marketSell, marketSeed]);
 
   return <ChainContext.Provider value={value}><Toaster toast={toast} />{children}</ChainContext.Provider>;
 }
