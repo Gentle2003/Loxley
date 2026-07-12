@@ -5,7 +5,7 @@ import {
   registerRepo as libRegisterRepo, tribute as libTribute, bounty as libBounty,
 } from "../lib/sherwood.js";
 import { enrichWithGithub } from "../lib/indexer.js";
-import { buy as mktBuy, sell as mktSell, createPool as mktCreatePool } from "../lib/market.js";
+import { buy as mktBuy, sell as mktSell, createPool as mktCreatePool, enrichWithMarket } from "../lib/market.js";
 
 /* ------------------------------------------------------------------
    ChainProvider — owns the quiver + wallet + write actions.
@@ -183,9 +183,11 @@ function LiveChainProvider({ children }) {
   const refresh = useCallback(async (acct) => {
     try {
       const list = await readQuiver(acct || undefined, acct ? short(acct) : undefined);
-      setRepos(list);                              // show on-chain data immediately
+      setRepos(list);                                // show on-chain data immediately
       const enriched = await enrichWithGithub(list); // then fill in GitHub stars/desc
       setRepos(enriched);
+      const priced = await enrichWithMarket(enriched); // then market price + mcap
+      setRepos(priced);
     } catch (e) {
       notify(e.shortMessage || e.message || "Couldn't read the quiver");
     }

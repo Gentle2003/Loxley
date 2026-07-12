@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useChain } from "../store/ChainProvider.jsx";
 import Drawer from "../components/Drawer.jsx";
 import { resolveRepo, parseRepoInput } from "../lib/indexer.js";
-import { fmt, eth, ago } from "../mocks/fakeChain.js";
+import { fmt, eth, priceEth } from "../mocks/fakeChain.js";
 
 const LANGS = ["TypeScript", "Python", "Go", "Rust", "C", "Solidity"];
 
@@ -28,9 +28,10 @@ export default function Quiver() {
         r.language.toLowerCase().includes(query) ||
         r.symbol.toLowerCase().includes(query))
       .sort((a, b) =>
-        sort === "funded" ? b.totalTribute - a.totalTribute
-          : sort === "stars" ? b.stars - a.stars
-            : b.id - a.id);
+        sort === "mcap" ? (b.mcap || 0) - (a.mcap || 0)
+          : sort === "funded" ? b.totalTribute - a.totalTribute
+            : sort === "stars" ? b.stars - a.stars
+              : b.id - a.id);
   }, [repos, q, sort]);
 
   const openRegister = () => { if (requireWallet()) setOpen(true); };
@@ -56,6 +57,7 @@ export default function Quiver() {
           <label>Sort</label>
           <select value={sort} onChange={(e) => setSort(e.target.value)}>
             <option value="new">Newest first</option>
+            <option value="mcap">Highest market cap</option>
             <option value="funded">Most tribute</option>
             <option value="stars">Most stars</option>
           </select>
@@ -65,17 +67,17 @@ export default function Quiver() {
 
       <div className="card q-table">
         <div className="q-head mono">
-          <span>Github</span><span>Language</span><span className="r">Stars</span>
-          <span>Arrow</span><span className="r">Total tribute</span><span className="r">Registered</span>
+          <span>Github</span><span>Arrow</span><span className="r">Price</span>
+          <span className="r">Market cap</span><span className="r">Tribute</span><span className="r">Stars</span>
         </div>
         {list.map((r) => (
           <div className="q-line" key={r.id} onClick={() => navigate(`/repo/${r.id}`)}>
             <span className="repo-name mono">{ghIcon}{r.repoFullName}</span>
-            <span className="soft">{r.language}</span>
-            <span className="r soft">★ {fmt(r.stars)}</span>
             <span className="sym">${r.symbol}</span>
+            <span className={`r ${r.price ? "" : "mute"}`}>{priceEth(r.price)}</span>
+            <span className={`r ${r.mcap ? "eth" : "mute"}`}>{priceEth(r.mcap)}</span>
             <span className={`r ${r.totalTribute ? "eth" : "mute"}`}>{r.totalTribute ? eth(r.totalTribute) : "—"}</span>
-            <span className="r mute">{ago(r.registeredAt)}</span>
+            <span className="r soft">★ {fmt(r.stars)}</span>
           </div>
         ))}
         {list.length === 0 && (
@@ -219,7 +221,7 @@ const styles = `
   outline: none; border-color: var(--green); box-shadow: 0 0 0 3px var(--green-dim); }
 
 .q-table { overflow: hidden; }
-.q-head, .q-line { display: grid; grid-template-columns: 2.4fr 1fr .9fr .9fr 1.1fr 1.1fr; align-items: center; gap: 12px; padding: 15px 20px; }
+.q-head, .q-line { display: grid; grid-template-columns: 2.2fr .9fr 1fr 1.1fr 1fr .8fr; align-items: center; gap: 12px; padding: 15px 20px; }
 .q-head { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-mute); border-bottom: 1px solid var(--line); }
 .q-line { border-bottom: 1px solid var(--line); cursor: pointer; transition: background .12s; }
 .q-line:last-child { border-bottom: none; }
@@ -243,7 +245,9 @@ const styles = `
 .reg-note { color: var(--text-mute); font-size: 12px; text-align: center; margin-top: 4px; }
 
 @media (max-width: 760px) {
-  .q-head, .q-line { grid-template-columns: 2fr 1fr 1fr; }
-  .q-head span:nth-child(n+4), .q-line span:nth-child(n+4) { display: none; }
+  /* keep Repo · Arrow · Market cap */
+  .q-head, .q-line { grid-template-columns: 1.8fr 1fr 1.1fr; }
+  .q-head span:nth-child(3), .q-head span:nth-child(5), .q-head span:nth-child(6),
+  .q-line span:nth-child(3), .q-line span:nth-child(5), .q-line span:nth-child(6) { display: none; }
 }
 `;

@@ -100,7 +100,7 @@ export default function RepoDetail() {
 
           {/* Market (live) or the mock take-a-stake (design mode) */}
           {mode === "live" && IS_MARKET_LIVE ? (
-            <MarketPanel arrow={r.arrow} symbol={r.symbol} myBal={myBal} />
+            <MarketPanel arrow={r.arrow} symbol={r.symbol} myBal={myBal} supply={r.supply} />
           ) : (
             connected && !iOwn && ownerHasSupply && (
               <div className="act card">

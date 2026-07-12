@@ -9,6 +9,23 @@ export const IS_MARKET_LIVE = /^0x[0-9a-fA-F]{40}$/.test(MARKET_ADDRESS);
 
 const SLIPPAGE_BPS = 300n; // 3% tolerance on swaps
 
+/* Enrich repos with market price + market cap (price x total supply).
+   Repos without a pool get price/mcap 0. No-op if no Market configured. */
+export async function enrichWithMarket(repos) {
+  if (!IS_MARKET_LIVE) return repos;
+  return Promise.all(repos.map(async (r) => {
+    try {
+      const wei = await publicClient.readContract({
+        address: MARKET_ADDRESS, abi: marketAbi, functionName: "pricePerArrow", args: [r.arrow],
+      });
+      const price = Number(formatEther(wei));
+      return { ...r, price, mcap: price * r.supply, hasMarket: price > 0 };
+    } catch {
+      return { ...r, price: 0, mcap: 0, hasMarket: false };
+    }
+  }));
+}
+
 /* ---- reads ---- */
 export async function readMarket(arrow) {
   const [pool, price] = await Promise.all([

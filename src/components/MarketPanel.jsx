@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useChain } from "../store/ChainProvider.jsx";
 import { readMarket, quoteBuy, quoteSell } from "../lib/market.js";
-import { eth, fmt } from "../mocks/fakeChain.js";
+import { eth, fmt, priceEth } from "../mocks/fakeChain.js";
 
 /* Buy/sell an Arrow against its AMM pool. Live mode only, when a Market is
    configured. Testnet prototype — see CLAUDE.md guardrails. */
-export default function MarketPanel({ arrow, symbol, myBal }) {
+export default function MarketPanel({ arrow, symbol, myBal, supply }) {
   const { connected, marketBuy, marketSell, marketSeed } = useChain();
   const [pool, setPool] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -65,7 +65,17 @@ export default function MarketPanel({ arrow, symbol, myBal }) {
 
   return (
     <div className="mkt card">
-      <div className="mkt-h">Market <span className="mkt-price eth">{eth(pool.pricePerArrow)}<span className="mkt-mut"> / {sym.replace("s", "")}</span></span></div>
+      <div className="mkt-h">Market</div>
+      <div className="mkt-stats">
+        <div className="mkt-stat">
+          <div className="mkt-k">Price</div>
+          <div className="mkt-v">{priceEth(pool.pricePerArrow)}<span className="mkt-mut"> / {sym.replace(/s$/, "")}</span></div>
+        </div>
+        <div className="mkt-stat">
+          <div className="mkt-k">Market cap</div>
+          <div className="mkt-v eth">{priceEth(pool.pricePerArrow * (supply || 0))}</div>
+        </div>
+      </div>
       <div className="mkt-liq">Liquidity {eth(pool.ethReserve)} + {fmt(Math.round(pool.arrowReserve))} {sym}</div>
 
       <div className="mkt-act">
@@ -96,8 +106,11 @@ export default function MarketPanel({ arrow, symbol, myBal }) {
 const css = `
 .mkt { padding: 20px 22px; margin-bottom: 16px; }
 .mkt-h { font-family: var(--font-display); font-size: 18px; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-.mkt-price { font-size: 17px; font-weight: 600; }
-.mkt-mut { color: var(--text-mute); font-size: 12px; font-family: var(--font-mono); }
+.mkt-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin: 12px 0; }
+.mkt-stat { background: var(--panel); padding: 12px 14px; }
+.mkt-k { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-mute); }
+.mkt-v { font-family: var(--font-display); font-size: 19px; font-weight: 600; margin-top: 3px; }
+.mkt-mut { color: var(--text-mute); font-size: 12px; font-family: var(--font-mono); font-weight: 400; }
 .mkt-liq { color: var(--text-mute); font-size: 12px; font-family: var(--font-mono); margin-top: 4px; }
 .mkt-sub { color: var(--text-soft); font-size: 13.5px; margin: 8px 0 14px; }
 .mkt-act { border-top: 1px solid var(--line); margin-top: 15px; padding-top: 14px; }

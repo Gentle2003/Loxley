@@ -74,6 +74,9 @@ export const bountyOf = (r, a) =>
 export const fmt = (n) => n.toLocaleString("en-US");
 export const eth = (n) =>
   "Ξ" + (Math.round(n * 1e6) / 1e6).toLocaleString("en-US", { maximumFractionDigits: 6 });
+// price/mcap can be tiny (high supply) — show 3 significant figures for < 1.
+export const priceEth = (n) =>
+  !n ? "—" : "Ξ" + n.toLocaleString("en-US", n >= 1 ? { maximumFractionDigits: 3 } : { maximumSignificantDigits: 3 });
 export const ago = (ts) => {
   const d = Math.floor((Date.now() - ts) / 864e5);
   return d <= 0 ? "today" : d === 1 ? "1 day ago" : d + " days ago";
