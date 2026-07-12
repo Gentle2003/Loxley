@@ -6,6 +6,8 @@ import { resolveRepo, parseRepoInput } from "../lib/indexer.js";
 import { fmt, eth, priceEth } from "../mocks/fakeChain.js";
 
 const LANGS = ["TypeScript", "Python", "Go", "Rust", "C", "Solidity"];
+// Valid owner/name. Malformed on-chain entries (URL-shaped names) are hidden.
+const VALID_REPO = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 
 const ghIcon = (
   <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" style={{ flex: "none", opacity: 0.7 }}>
@@ -20,9 +22,11 @@ export default function Quiver() {
   const [sort, setSort] = useState("new");
   const [open, setOpen] = useState(false);
 
+  const visible = useMemo(() => repos.filter((r) => VALID_REPO.test(r.repoFullName)), [repos]);
+
   const list = useMemo(() => {
     const query = q.toLowerCase();
-    return repos
+    return visible
       .filter((r) => !query ||
         r.repoFullName.toLowerCase().includes(query) ||
         r.language.toLowerCase().includes(query) ||
@@ -32,7 +36,7 @@ export default function Quiver() {
           : sort === "funded" ? b.totalTribute - a.totalTribute
             : sort === "stars" ? b.stars - a.stars
               : b.id - a.id);
-  }, [repos, q, sort]);
+  }, [visible, q, sort]);
 
   const openRegister = () => { if (requireWallet()) setOpen(true); };
 
@@ -43,7 +47,7 @@ export default function Quiver() {
           <p className="eyebrow">The Quiver</p>
           <h1>Every repo in the forest.</h1>
           <p className="q-lede">
-            Search the quiver, fund a repo with tribute, or arm your own. {repos.length} repos registered.
+            Search the quiver, fund a repo with tribute, or arm your own. {visible.length} repos registered.
           </p>
         </div>
       </header>
