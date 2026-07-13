@@ -3,7 +3,6 @@ import { useParams, Link } from "react-router-dom";
 import { useChain } from "../store/ChainProvider.jsx";
 import { readHolders } from "../lib/indexer.js";
 import { short } from "../lib/sherwood.js";
-import { IS_MARKET_LIVE } from "../lib/market.js";
 import MarketPanel from "../components/MarketPanel.jsx";
 import { balanceOf, bountyOf, fmt, eth, ago } from "../mocks/fakeChain.js";
 
@@ -99,7 +98,7 @@ export default function RepoDetail() {
           )}
 
           {/* Market (live) or the mock take-a-stake (design mode) */}
-          {mode === "live" && IS_MARKET_LIVE ? (
+          {mode === "live" ? (
             <MarketPanel arrow={r.arrow} symbol={r.symbol} myBal={myBal} supply={r.supply} />
           ) : (
             connected && !iOwn && ownerHasSupply && (

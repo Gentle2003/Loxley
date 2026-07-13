@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useChain } from "../store/ChainProvider.jsx";
-import { readMarket, quoteBuy, quoteSell } from "../lib/market.js";
+import { readMarket, quoteBuy, quoteSell, IS_MARKET_LIVE } from "../lib/market.js";
 import { eth, fmt } from "../mocks/fakeChain.js";
 import { useCurrency } from "../store/CurrencyContext.jsx";
 
@@ -40,6 +40,15 @@ export default function MarketPanel({ arrow, symbol, myBal, supply }) {
   const run = async (fn) => { setBusy(true); const ok = await fn(); setBusy(false); if (ok) await load(); return ok; };
 
   const styles = <style>{css}</style>;
+
+  if (!IS_MARKET_LIVE)
+    return (
+      <div className="mkt card">
+        <div className="mkt-h">Market</div>
+        <p className="mkt-sub">Trading launches on <b>Robinhood Chain mainnet</b> (via Uniswap). On testnet you can still register, pay tribute, and collect bounty.</p>
+        {styles}
+      </div>
+    );
 
   if (loading)
     return <div className="mkt card"><div className="mkt-h">Market</div><p className="mkt-sub">Loading market…</p>{styles}</div>;
