@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useChain } from "../store/ChainProvider.jsx";
 import { readMarket, quoteBuy, quoteSell } from "../lib/market.js";
-import { eth, fmt, priceEth } from "../mocks/fakeChain.js";
+import { eth, fmt } from "../mocks/fakeChain.js";
+import { useCurrency } from "../store/CurrencyContext.jsx";
 
 /* Buy/sell an Arrow against its AMM pool. Live mode only, when a Market is
    configured. Testnet prototype — see CLAUDE.md guardrails. */
 export default function MarketPanel({ arrow, symbol, myBal, supply }) {
   const { connected, marketBuy, marketSell, marketSeed } = useChain();
+  const { money } = useCurrency();
   const [pool, setPool] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -69,11 +71,11 @@ export default function MarketPanel({ arrow, symbol, myBal, supply }) {
       <div className="mkt-stats">
         <div className="mkt-stat">
           <div className="mkt-k">Price</div>
-          <div className="mkt-v">{priceEth(pool.pricePerArrow)}<span className="mkt-mut"> / {sym.replace(/s$/, "")}</span></div>
+          <div className="mkt-v">{money(pool.pricePerArrow)}<span className="mkt-mut"> / {sym.replace(/s$/, "")}</span></div>
         </div>
         <div className="mkt-stat">
           <div className="mkt-k">Market cap</div>
-          <div className="mkt-v eth">{priceEth(pool.pricePerArrow * (supply || 0))}</div>
+          <div className="mkt-v eth">{money(pool.pricePerArrow * (supply || 0))}</div>
         </div>
       </div>
       <div className="mkt-liq">Liquidity {eth(pool.ethReserve)} + {fmt(Math.round(pool.arrowReserve))} {sym}</div>

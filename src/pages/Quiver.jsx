@@ -1,9 +1,11 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChain } from "../store/ChainProvider.jsx";
+import { useCurrency } from "../store/CurrencyContext.jsx";
 import Drawer from "../components/Drawer.jsx";
+import CurrencyToggle from "../components/CurrencyToggle.jsx";
 import { resolveRepo, parseRepoInput } from "../lib/indexer.js";
-import { fmt, eth, priceEth } from "../mocks/fakeChain.js";
+import { fmt, eth } from "../mocks/fakeChain.js";
 
 const LANGS = ["TypeScript", "Python", "Go", "Rust", "C", "Solidity"];
 // Valid owner/name. Malformed on-chain entries (URL-shaped names) are hidden.
@@ -17,6 +19,7 @@ const ghIcon = (
 
 export default function Quiver() {
   const { repos, connected, requireWallet, registerRepo } = useChain();
+  const { money } = useCurrency();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [sort, setSort] = useState("new");
@@ -66,6 +69,7 @@ export default function Quiver() {
             <option value="stars">Most stars</option>
           </select>
         </div>
+        <CurrencyToggle />
         <button className="btn btn-primary" onClick={openRegister}>+ Register repo</button>
       </div>
 
@@ -78,8 +82,8 @@ export default function Quiver() {
           <div className="q-line" key={r.id} onClick={() => navigate(`/repo/${r.id}`)}>
             <span className="repo-name mono">{ghIcon}{r.repoFullName}</span>
             <span className="sym">${r.symbol}</span>
-            <span className={`r ${r.price ? "" : "mute"}`}>{priceEth(r.price)}</span>
-            <span className={`r ${r.mcap ? "eth" : "mute"}`}>{priceEth(r.mcap)}</span>
+            <span className={`r ${r.price ? "" : "mute"}`}>{money(r.price)}</span>
+            <span className={`r ${r.mcap ? "eth" : "mute"}`}>{money(r.mcap)}</span>
             <span className={`r ${r.totalTribute ? "eth" : "mute"}`}>{r.totalTribute ? eth(r.totalTribute) : "—"}</span>
             <span className="r soft">★ {fmt(r.stars)}</span>
           </div>
