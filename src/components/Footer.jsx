@@ -57,7 +57,7 @@ export default function Footer() {
       </div>
 
       <div className="wrap foot-fine">
-        Unaudited · not financial advice · not affiliated with Robinhood · {NETWORK}.
+        not financial advice · not affiliated with Robinhood · {NETWORK}.
       </div>
 
       <style>{`
