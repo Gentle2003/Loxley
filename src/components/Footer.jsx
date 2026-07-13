@@ -49,10 +49,9 @@ export default function Footer() {
         <div className="foot-social">
           <div className="foot-k">Follow</div>
           <a className="foot-x" href={X_URL} target="_blank" rel="noreferrer" aria-label="Loxley on X">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
-            <span>X</span>
           </a>
         </div>
       </div>
@@ -84,9 +83,9 @@ export default function Footer() {
         .foot-copy { font-family: var(--font-mono); font-size: 11px; color: var(--green);
           border-left: 1px solid var(--line-hi); padding-left: 12px; }
 
-        .foot-x { display: inline-flex; align-items: center; gap: 8px; color: var(--text);
-          background: var(--panel); border: 1px solid var(--line-hi); border-radius: 10px; padding: 10px 15px;
-          font-size: 14px; font-weight: 600; transition: border-color .15s, color .15s; }
+        .foot-x { display: inline-grid; place-items: center; width: 42px; height: 42px; color: var(--text);
+          background: var(--panel); border: 1px solid var(--line-hi); border-radius: 10px;
+          transition: border-color .15s, color .15s; }
         .foot-x:hover { border-color: var(--green); color: var(--green); }
 
         .foot-fine { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line);
