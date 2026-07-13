@@ -5,7 +5,7 @@ import Logo from "./Logo.jsx";
 // The contract address shown in the footer. Set VITE_CONTRACT_ADDRESS at launch;
 // falls back to the registry address, or "Coming soon" if neither is set.
 const CA = import.meta.env.VITE_CONTRACT_ADDRESS || import.meta.env.VITE_SHERWOOD_ADDRESS || "";
-const X_URL = import.meta.env.VITE_X_URL || "https://x.com/"; // TODO: set the Loxley X handle
+const X_URL = import.meta.env.VITE_X_URL || "https://x.com/Loxleyrobinhood";
 const NETWORK = import.meta.env.VITE_NETWORK_LABEL || "Robinhood Chain testnet";
 
 export default function Footer() {
