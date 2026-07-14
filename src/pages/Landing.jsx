@@ -63,7 +63,7 @@ export default function Landing() {
             initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className="pill"><span className="dot" /> Prototype · Robinhood Chain testnet · no real money</span>
+            <span className="pill"><span className="dot" /> MVP · Robinhood Chain · </span>
             <h1 className="hero-h">
               Turn a repo into an <span className="grad">Arrow</span><br />
               that pays everyone who holds it.
@@ -233,21 +233,6 @@ bounty():   send you your share, mark collected`}</pre>
       </section>
 
       {/* ============ GUARDRAILS ============ */}
-      <section className="block">
-        <div className="wrap">
-          <Reveal>
-            <div className="guard card">
-              <h3>What Loxley is <span className="up">not</span>.</h3>
-              <div className="guard-grid">
-                <div><b>Testnet only.</b> Robinhood Chain testnet. Never mainnet in this MVP.</div>
-                <div><b>No token sale.</b> Arrows are minted to registrants — there's no presale or ICO.</div>
-                <div><b>No $LOX yet.</b> The governance token is branding only until deliberately designed.</div>
-                <div><b>Not audited.</b> Don't hold real value here. A cashflow token is likely a security.</div>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
 
       {/* ============ FINAL CTA ============ */}
       <section className="block">
