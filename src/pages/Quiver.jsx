@@ -5,6 +5,7 @@ import { useCurrency } from "../store/CurrencyContext.jsx";
 import Drawer from "../components/Drawer.jsx";
 import CurrencyToggle from "../components/CurrencyToggle.jsx";
 import { resolveRepo, parseRepoInput } from "../lib/indexer.js";
+import { startVerification, consumeCallback, OAUTH_CONFIGURED } from "../lib/ghAuth.js";
 import { fmt, eth } from "../mocks/fakeChain.js";
 
 const LANGS = ["TypeScript", "Python", "Go", "Rust", "C", "Solidity"];
@@ -24,6 +25,19 @@ export default function Quiver() {
   const [q, setQ] = useState("");
   const [sort, setSort] = useState("new");
   const [open, setOpen] = useState(false);
+  const [restored, setRestored] = useState(null); // { form, verified } after an OAuth round-trip
+
+  // Returning from GitHub? Finish the ownership check, reopen the drawer, restore the form.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const cb = await consumeCallback();
+      if (!cb || !alive) return;
+      setRestored({ form: cb.stash || {}, verified: cb.result });
+      setOpen(true);
+    })();
+    return () => { alive = false; };
+  }, []);
 
   const visible = useMemo(() => repos.filter((r) => VALID_REPO.test(r.repoFullName)), [repos]);
 
@@ -100,6 +114,8 @@ export default function Quiver() {
         subtitle="Records the repo in Sherwood and mints its full Arrow supply to you. This is registerRepo()."
       >
         <RegisterForm
+          key={restored ? "restored" : "fresh"}
+          initial={restored}
           onSubmit={async (form) => { const ok = await registerRepo(form); if (ok) setOpen(false); return ok; }}
           disabled={!connected}
         />
@@ -129,17 +145,19 @@ function RepoStatus({ status, resolved }) {
   return null;
 }
 
-function RegisterForm({ onSubmit }) {
-  const [repo, setRepo] = useState("");
-  const [language, setLanguage] = useState(LANGS[0]);
-  const [symbol, setSymbol] = useState("");
-  const [supply, setSupply] = useState("1000000");
+function RegisterForm({ onSubmit, initial }) {
+  const [repo, setRepo] = useState(initial?.form?.repo || "");
+  const [language, setLanguage] = useState(initial?.form?.language || LANGS[0]);
+  const [symbol, setSymbol] = useState(initial?.form?.symbol || "");
+  const [supply, setSupply] = useState(initial?.form?.supply || "1000000");
   const [status, setStatus] = useState("idle"); // idle|checking|found|notfound|invalid|error
   const [resolved, setResolved] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [verified, setVerified] = useState(initial?.verified || null); // GitHub OAuth result
+  const [verifying, setVerifying] = useState(false);
   const debounce = useRef(null);
   const reqId = useRef(0);
-  const symbolTouched = useRef(false);
+  const symbolTouched = useRef(initial?.form?.symbol ? true : false);
 
   // Resolve + verify the GitHub repo as the user types (debounced).
   useEffect(() => {
@@ -163,18 +181,40 @@ function RegisterForm({ onSubmit }) {
     return () => clearTimeout(debounce.current);
   }, [repo]);
 
-  const canSubmit = (status === "found" || status === "error") && !busy;
+  // A verification is bound to one repo — drop it the moment the repo changes.
+  useEffect(() => {
+    if (!verified) return;
+    const cur = parseRepoInput(repo);
+    const vfull = `${verified.owner}/${verified.name}`;
+    if (!cur || cur.toLowerCase() !== vfull.toLowerCase()) setVerified(null);
+  }, [repo]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const repoReady = status === "found" || status === "error";
+  const targetFull = status === "found" && resolved ? resolved.fullName : parseRepoInput(repo);
+  // OAuth is a hard gate only when it's actually configured; otherwise it's an
+  // optional demo step and registration proceeds as before.
+  const verifiedOk = verified?.verified === true;
+  const canSubmit = repoReady && !busy && (!OAUTH_CONFIGURED || verifiedOk);
+
+  const verify = async () => {
+    if (!targetFull) { setStatus("invalid"); return; }
+    const [owner, name] = targetFull.split("/");
+    setVerifying(true);
+    // Real mode redirects away and returns null; mock mode resolves inline.
+    const res = await startVerification({ owner, name, stash: { repo, language, symbol, supply } });
+    if (res) { setVerified(res); setVerifying(false); }
+  };
 
   const handle = async () => {
     if (!canSubmit) return;
-    const repoFullName = status === "found" && resolved ? resolved.fullName : parseRepoInput(repo);
+    const repoFullName = targetFull;
     if (!repoFullName) { setStatus("invalid"); return; }
     setBusy(true);
     const ok = await onSubmit({ repoFullName, language, symbol, supply });
     setBusy(false);
     if (ok) { // reset for the next registration
       setRepo(""); setSymbol(""); setSupply("1000000"); setLanguage(LANGS[0]);
-      setStatus("idle"); setResolved(null); symbolTouched.current = false;
+      setStatus("idle"); setResolved(null); setVerified(null); symbolTouched.current = false;
     }
   };
 
@@ -202,6 +242,35 @@ function RegisterForm({ onSubmit }) {
         <label>Initial supply</label>
         <input type="number" value={supply} onChange={(e) => setSupply(e.target.value)} />
       </div>
+
+      {repoReady && targetFull && (
+        <div className="reg-verify">
+          {verifiedOk ? (
+            <p className="reg-status ok">
+              Ownership verified{verified.login ? ` as @${verified.login}` : ""}
+              {verified.permission ? ` · ${verified.permission}` : ""}{verified.mock ? " (mock)" : ""} ✓
+            </p>
+          ) : (
+            <>
+              <button className="btn btn-ghost" type="button" disabled={verifying}
+                style={{ width: "100%", justifyContent: "center" }} onClick={verify}>
+                {ghIcon}&nbsp;{verifying ? "Verifying…" : "Verify ownership on GitHub"}
+              </button>
+              {verified && !verifiedOk && (
+                <p className="reg-status err">
+                  {verified.login ? `@${verified.login} — ` : ""}not an admin of {targetFull}. Register with the owning account.
+                </p>
+              )}
+              <p className="reg-note" style={{ margin: "2px 0 0" }}>
+                {OAUTH_CONFIGURED
+                  ? "Only a GitHub admin of this repo can register it."
+                  : "OAuth not configured — this is a mock check (set VITE_GITHUB_CLIENT_ID to go live)."}
+              </p>
+            </>
+          )}
+        </div>
+      )}
+
       <button className="btn btn-primary" disabled={!canSubmit}
         style={{ width: "100%", justifyContent: "center", marginTop: 6 }} onClick={handle}>
         {busy ? "Registering…" : "Register & mint to me"}
@@ -253,6 +322,8 @@ const styles = `
 .reg-status.warn { color: var(--cash); }
 .reg-status.mute { color: var(--text-mute); }
 .reg-note { color: var(--text-mute); font-size: 12px; text-align: center; margin-top: 4px; }
+.reg-verify { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px dashed var(--line-hi); border-radius: 10px; }
+.reg-verify .reg-status { margin: 0; text-align: center; }
 
 @media (max-width: 760px) {
   /* keep Repo · Arrow · Market cap */
