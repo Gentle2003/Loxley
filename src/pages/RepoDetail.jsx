@@ -54,6 +54,7 @@ export default function RepoDetail() {
         <p className="rd-meta">
           <span className="sym">${r.symbol}</span> Arrow · {r.language} · ★ {fmt(r.stars)} ·
           registered {ago(r.registeredAt)}
+          {r.verified && <span style={{ color: "var(--green)", marginLeft: 6 }}>· ✓ Owner-verified</span>}
         </p>
         {r.description && <p className="rd-desc">{r.description}</p>}
         <a className="rd-gh" href={`https://github.com/${r.repoFullName}`} target="_blank" rel="noreferrer">

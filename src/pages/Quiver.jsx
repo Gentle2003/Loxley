@@ -80,7 +80,7 @@ export default function Quiver() {
         </div>
         {list.map((r) => (
           <div className="q-line" key={r.id} onClick={() => navigate(`/repo/${r.id}`)}>
-            <span className="repo-name mono">{ghIcon}{r.repoFullName}</span>
+            <span className="repo-name mono">{ghIcon}{r.repoFullName}{r.verified && <span className="vbadge" title="Owner-verified on GitHub">✓</span>}</span>
             <span className="sym">${r.symbol}</span>
             <span className={`r ${r.price ? "" : "mute"}`}>{money(r.price)}</span>
             <span className={`r ${r.mcap ? "eth" : "mute"}`}>{money(r.mcap)}</span>
@@ -235,6 +235,8 @@ const styles = `
 .q-line:last-child { border-bottom: none; }
 .q-line:hover { background: var(--panel-hi); }
 .repo-name { display: inline-flex; align-items: center; gap: 9px; color: var(--text); font-size: 14.5px; }
+.vbadge { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--green-dim); color: var(--green); font-size: 10px; font-weight: 700; }
 .soft { color: var(--text-soft); }
 .mute { color: var(--text-mute); }
 .r { text-align: right; justify-self: end; white-space: nowrap; }

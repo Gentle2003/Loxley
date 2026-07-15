@@ -83,11 +83,33 @@ export async function resolveRepo(input) {
   }
 }
 
-/* Enrich a list of on-chain repos with GitHub stars + description. */
+/* Ownership proof: the repo's owner proves control by committing a file
+   `loxley-verify.txt` containing their wallet address to the default branch
+   (only someone with write/admin access can do that). Checked client-side via
+   the GitHub API — no backend. `address` is the on-chain repo owner. */
+export async function checkOwnershipProof(repoFullName, address) {
+  if (!repoFullName || !address) return false;
+  try {
+    const res = await fetch(`https://api.github.com/repos/${repoFullName}/contents/loxley-verify.txt`, {
+      headers: { Accept: "application/vnd.github.raw+json" },
+    });
+    if (!res.ok) return false;
+    const text = await res.text();
+    return text.toLowerCase().includes(address.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+/* Enrich a list of on-chain repos with GitHub stars + description + verified. */
 export async function enrichWithGithub(repos) {
   return Promise.all(repos.map(async (r) => {
-    const gh = await fetchGithub(r.repoFullName);
-    return gh ? { ...r, stars: gh.stars, description: gh.description } : r;
+    const [gh, verified] = await Promise.all([
+      fetchGithub(r.repoFullName),
+      checkOwnershipProof(r.repoFullName, r.owner),
+    ]);
+    const base = gh ? { ...r, stars: gh.stars, description: gh.description } : r;
+    return { ...base, verified };
   }));
 }
 
