@@ -101,13 +101,34 @@ export async function checkOwnershipProof(repoFullName, address) {
   }
 }
 
-/* Enrich a list of on-chain repos with GitHub stars + description + verified. */
+/* OAuth-verified repos, from the serverless KV store (api/verified). Returns a
+   Set of lowercased "owner/name". Cache-busted so a just-verified repo shows its
+   badge immediately; degrades to an empty set with no backend (local dev). */
+export async function fetchVerifiedSet() {
+  const set = new Set();
+  try {
+    const res = await fetch(`/api/verified?t=${Date.now()}`);
+    if (res.ok) {
+      const d = await res.json();
+      (d.repos || []).forEach((k) => set.add(String(k).toLowerCase()));
+    }
+  } catch {
+    /* no serverless / offline — the proof-file badge still works */
+  }
+  return set;
+}
+
+/* Enrich a list of on-chain repos with GitHub stars + description + verified.
+   A repo is verified if EITHER path passed: the loxley-verify.txt proof, or a
+   GitHub OAuth admin check recorded in KV. */
 export async function enrichWithGithub(repos) {
+  const oauthSet = await fetchVerifiedSet();
   return Promise.all(repos.map(async (r) => {
-    const [gh, verified] = await Promise.all([
+    const [gh, proof] = await Promise.all([
       fetchGithub(r.repoFullName),
       checkOwnershipProof(r.repoFullName, r.owner),
     ]);
+    const verified = proof || oauthSet.has(r.repoFullName.toLowerCase());
     const base = gh ? { ...r, stars: gh.stars, description: gh.description } : r;
     return { ...base, verified };
   }));

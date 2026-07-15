@@ -18,6 +18,8 @@
    Response: { verified, login?, permission?, reason?, mock? }
    ------------------------------------------------------------------ */
 
+import { setVerified } from "./_kv.js";
+
 const MOCK =
   process.env.VERIFY_MOCK === "1" ||
   !process.env.GITHUB_CLIENT_ID ||
@@ -71,11 +73,18 @@ export default async function handler(req, res) {
     const repo = await repoRes.json();
     const p = repo.permissions || {};
     const permission = p.admin ? "admin" : p.push ? "push" : p.pull ? "pull" : "none";
+    const verified = p.admin === true;
+    if (verified) {
+      // best-effort persist so the Quiver can badge this repo for every visitor
+      try {
+        await setVerified(owner, name, { verified: true, login: me.login, permission, at: Date.now() });
+      } catch { /* KV optional — never block verification on a store failure */ }
+    }
     return res.status(200).json({
-      verified: p.admin === true,
+      verified,
       login: me.login,
       permission,
-      reason: p.admin ? undefined : "not an admin",
+      reason: verified ? undefined : "not an admin",
     });
   } catch {
     return res.status(500).json({ verified: false, reason: "server error" });

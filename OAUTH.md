@@ -50,11 +50,25 @@ Optional: `VITE_GITHUB_SCOPE=repo` to also verify **private** repos (default
    unlocks.
 3. Try a repo you *don't* own → the check fails and registration stays blocked.
 
-## What's still a follow-up
+## 4. Badge persistence — provision a KV store
 
-The register-time gate is enforced, but the **Verified ✓ badge in the Quiver**
-is still driven by the `loxley-verify.txt` proof (it's re-checkable by anyone at
-any time; an OAuth pass is a one-time event). To badge OAuth-verified repos too,
-persist the result — either a signed attestation from `api/verify-repo.js`
-(HMAC/keypair, verifiable client-side) or a small Vercel KV record. No contract
-change needed for either.
+A successful OAuth check writes the repo to a KV store (`api/verify-repo.js` →
+`api/_kv.js`), and the Quiver reads that list (`api/verified` →
+`src/lib/indexer.js`) so **every visitor** sees the Verified ✓ badge — not just
+the person who verified. Until a store is connected, badges fall back to the
+`loxley-verify.txt` proof only.
+
+To turn it on:
+
+1. Vercel → **Storage → Create Database → KV** (Upstash Redis; free tier is
+   fine). Connect it to this project.
+2. Vercel injects `KV_REST_API_URL` + `KV_REST_API_TOKEN` automatically — the
+   code also accepts the `UPSTASH_REDIS_REST_*` names if you use the Marketplace
+   integration directly. **Server-only — never prefix with `VITE_`.**
+3. Redeploy. Verify a repo you own → its badge appears in the Quiver for
+   everyone.
+
+Both verification paths (OAuth-in-KV and the `loxley-verify.txt` proof) light up
+the same badge — a repo is verified if *either* passed.
+
+**None of this touches the contract** — no change, no migration, no re-audit.
