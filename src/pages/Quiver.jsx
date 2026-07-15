@@ -276,7 +276,7 @@ function RegisterForm({ onSubmit, initial }) {
         {busy ? "Registering…" : "Register & mint to me"}
       </button>
       <p className="reg-note">
-        Testnet only · no token sale · Arrows are minted to you, the registrant.
+        MVP· Arrows are minted to you, the registrant.
       </p>
     </div>
   );
