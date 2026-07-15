@@ -15,31 +15,82 @@ import { arrowAbi } from "./abis.js";
 const ZERO = "0x0000000000000000000000000000000000000000";
 const ghCache = new Map(); // repoFullName -> meta | null
 
+/* All GitHub reads go through the authenticated serverless proxy (/api/gh):
+   it lifts the browser's 60 req/hr (unauthenticated, per-IP) to 5,000 req/hr
+   and edge-caches responses. When the proxy isn't there — local `npm run dev`
+   serves no functions — we fall back to direct unauthenticated GitHub. */
+const GH_PROXY = "/api/gh";
+
+/* raw GitHub repo object -> our compact meta shape (matches the proxy's shape) */
+function normRepo(d) {
+  return {
+    fullName: d.full_name,            // canonical owner/name (correct casing)
+    stars: d.stargazers_count ?? 0,
+    description: d.description || "",
+    language: d.language || "",
+    htmlUrl: d.html_url,
+    openIssues: d.open_issues_count ?? 0,
+    pushedAt: d.pushed_at || null,
+  };
+}
+
+/* Repo metadata → { status: "found"|"notfound"|"error", meta? }. Proxy first;
+   on anything inconclusive (incl. Vite serving HTML for /api in dev) fall back
+   to direct GitHub. */
+async function fetchRepoMeta(repo) {
+  try {
+    const r = await fetch(`${GH_PROXY}?repo=${encodeURIComponent(repo)}`);
+    if ((r.headers.get("content-type") || "").includes("application/json")) {
+      if (r.status === 404) return { status: "notfound" };
+      if (r.ok) {
+        const meta = await r.json();
+        if (meta && meta.fullName) return { status: "found", meta };
+      } else if (r.status === 403 || r.status === 429) {
+        return { status: "error" };
+      }
+    }
+  } catch { /* fall through to direct */ }
+  try {
+    const r = await fetch(`https://api.github.com/repos/${repo}`, {
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (r.status === 404) return { status: "notfound" };
+    if (!r.ok) return { status: "error" };            // 403 rate-limit, etc.
+    return { status: "found", meta: normRepo(await r.json()) };
+  } catch {
+    return { status: "error" };
+  }
+}
+
+/* Raw text of a file in the repo (for the loxley-verify.txt proof), or null.
+   Proxy first, then direct GitHub. */
+async function fetchRepoFile(repo, path) {
+  try {
+    const r = await fetch(`${GH_PROXY}?repo=${encodeURIComponent(repo)}&path=${encodeURIComponent(path)}`);
+    // text/html => Vite's SPA fallback in dev, not a real proxy response
+    if (!(r.headers.get("content-type") || "").includes("text/html")) {
+      if (r.status === 404) return null;
+      if (r.ok) return await r.text();
+    }
+  } catch { /* fall through to direct */ }
+  try {
+    const r = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+      headers: { Accept: "application/vnd.github.raw+json" },
+    });
+    if (!r.ok) return null;
+    return await r.text();
+  } catch {
+    return null;
+  }
+}
+
 /* ---- GitHub metadata ---- */
 export async function fetchGithub(repoFullName) {
   if (ghCache.has(repoFullName)) return ghCache.get(repoFullName);
-  let meta = null;
-  try {
-    const res = await fetch(`https://api.github.com/repos/${repoFullName}`, {
-      headers: { Accept: "application/vnd.github+json" },
-    });
-    if (res.ok) {
-      const d = await res.json();
-      meta = {
-        fullName: d.full_name,          // canonical owner/name (correct casing)
-        stars: d.stargazers_count ?? 0,
-        description: d.description || "",
-        language: d.language || "",
-        htmlUrl: d.html_url,
-        openIssues: d.open_issues_count ?? 0,
-        pushedAt: d.pushed_at || null,
-      };
-    }
-  } catch {
-    meta = null; // network/CORS/rate-limit — leave on-chain data as-is
-  }
-  ghCache.set(repoFullName, meta);
-  return meta;
+  const { status, meta } = await fetchRepoMeta(repoFullName);
+  const val = status === "found" ? meta : null;
+  ghCache.set(repoFullName, val);
+  return val;
 }
 
 /* Parse loose input (a full GitHub URL, git@ SSH, github.com/…, or owner/name)
@@ -60,27 +111,12 @@ export function parseRepoInput(input) {
 export async function resolveRepo(input) {
   const guess = parseRepoInput(input);
   if (!guess) return { status: "invalid" };
-  try {
-    const res = await fetch(`https://api.github.com/repos/${guess}`, {
-      headers: { Accept: "application/vnd.github+json" },
-    });
-    if (res.status === 404) return { status: "notfound", guess };
-    if (!res.ok) return { status: "error", guess };   // 403 rate-limit, etc.
-    const d = await res.json();
-    const meta = {
-      fullName: d.full_name,
-      stars: d.stargazers_count ?? 0,
-      description: d.description || "",
-      language: d.language || "",
-      htmlUrl: d.html_url,
-      openIssues: d.open_issues_count ?? 0,
-      pushedAt: d.pushed_at || null,
-    };
-    ghCache.set(meta.fullName, meta);                  // warm the enrich cache
-    return { status: "found", meta };
-  } catch {
-    return { status: "error", guess };
+  const res = await fetchRepoMeta(guess);
+  if (res.status === "found") {
+    ghCache.set(res.meta.fullName, res.meta);          // warm the enrich cache
+    return { status: "found", meta: res.meta };
   }
+  return { status: res.status, guess };                // notfound | error
 }
 
 /* Ownership proof: the repo's owner proves control by committing a file
@@ -89,16 +125,8 @@ export async function resolveRepo(input) {
    the GitHub API — no backend. `address` is the on-chain repo owner. */
 export async function checkOwnershipProof(repoFullName, address) {
   if (!repoFullName || !address) return false;
-  try {
-    const res = await fetch(`https://api.github.com/repos/${repoFullName}/contents/loxley-verify.txt`, {
-      headers: { Accept: "application/vnd.github.raw+json" },
-    });
-    if (!res.ok) return false;
-    const text = await res.text();
-    return text.toLowerCase().includes(address.toLowerCase());
-  } catch {
-    return false;
-  }
+  const text = await fetchRepoFile(repoFullName, "loxley-verify.txt");
+  return text ? text.toLowerCase().includes(address.toLowerCase()) : false;
 }
 
 /* OAuth-verified repos, from the serverless KV store (api/verified). Returns a
