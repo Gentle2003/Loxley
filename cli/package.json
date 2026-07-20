@@ -1,0 +1,31 @@
+{
+  "name": "loxley",
+  "version": "0.1.0",
+  "description": "Loxley CLI — register GitHub repos as on-chain Arrows on Robinhood Chain.",
+  "type": "module",
+  "bin": {
+    "loxley": "./bin/loxley.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "keywords": [
+    "loxley",
+    "open-source",
+    "robinhood-chain",
+    "web3",
+    "cli"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@clack/prompts": "^0.7.0",
+    "commander": "^12.1.0",
+    "open": "^10.1.0",
+    "viem": "^2.55.0"
+  }
+}

@@ -1,5 +1,19 @@
 # Deployments
 
+## Robinhood Chain MAINNET (chain ID 4663) — live
+
+| Contract | Address |
+|----------|---------|
+| **Sherwood** (registry + factory) | `0x9b9FA581bEF05Fe169763497fd7Fd2D307Fe91Ac` |
+
+- RPC: `https://rpc.mainnet.chain.robinhood.com`
+- Explorer: https://robinhoodchain.blockscout.com/address/0x9b9FA581bEF05Fe169763497fd7Fd2D307Fe91Ac
+- Trading: Uniswap V2 (already deployed on 4663 — addresses in `src/lib/market.js`)
+- Frontend targets mainnet via Vercel env vars (`VITE_CHAIN_ID=4663`, `VITE_SHERWOOD_ADDRESS`); see `MAINNET.md`.
+- Arrow tokens are deployed by `registerRepo`, so they aren't listed here — read them from the registry.
+
+> Unaudited. Not affiliated with Robinhood.
+
 ## Robinhood Chain testnet (chain ID 46630)
 
 | Contract | Address |

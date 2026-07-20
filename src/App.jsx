@@ -6,6 +6,7 @@ import Landing from "./pages/Landing.jsx";
 import Quiver from "./pages/Quiver.jsx";
 import RepoDetail from "./pages/RepoDetail.jsx";
 import Portfolio from "./pages/Portfolio.jsx";
+import CliConnect from "./pages/CliConnect.jsx";
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/quiver" element={<Quiver />} />
           <Route path="/repo/:id" element={<RepoDetail />} />
           <Route path="/portfolio" element={<Portfolio />} />
+          <Route path="/cli" element={<CliConnect />} />
         </Routes>
       </main>
       <Footer />
