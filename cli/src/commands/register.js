@@ -12,6 +12,7 @@ import { remoteConfig, SITE } from "../remote.js";
 import { readConfig } from "../config.js";
 import { parseRepoInput, getRepo } from "../github.js";
 import { makeClient, findRepo } from "../chain.js";
+import { recordVerification } from "../verify.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const suggestSymbol = (full) =>
@@ -144,6 +145,14 @@ export async function register(input, opts = {}) {
   }
 
   s3.stop("Registered");
+
+  // Record ownership server-side so the Verified ✓ badge shows for everyone.
+  const s4 = p.spinner();
+  s4.start("Recording ownership for the Verified badge");
+  const v = await recordVerification(repo.fullName, githubToken);
+  if (v.verified) s4.stop("Verified ✓ — badge will show in the Quiver");
+  else s4.stop(`Registered, but the badge wasn't recorded (${v.reason || "unknown"}). Retry: loxley verify ${repo.fullName}`);
+
   p.note(
     [
       `Arrow     ${found.arrow}`,

@@ -35,17 +35,22 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ verified: false, reason: "method" });
 
-  const { code, owner, name } = req.body || {};
+  // `code`  — the web OAuth redirect flow (exchanged here using the secret)
+  // `token` — the CLI device flow, which already holds a user token
+  const { code, owner, name, token: providedToken } = req.body || {};
   if (!owner || !name) return res.status(400).json({ verified: false, reason: "missing repo" });
 
-  if (MOCK) {
+  // A caller-supplied token is re-verified against GitHub below — we never
+  // trust a client asserting it's verified — so this path is real even when
+  // the OAuth client secret isn't configured.
+  if (MOCK && !providedToken) {
     return res.status(200).json({ verified: true, login: "mock-owner", permission: "admin", mock: true });
   }
-  if (!code) return res.status(400).json({ verified: false, reason: "missing code" });
+  if (!code && !providedToken) return res.status(400).json({ verified: false, reason: "missing code" });
 
   try {
     // 1) code -> user access token (client secret used here, server-side only)
-    const tokRes = await fetch("https://github.com/login/oauth/access_token", {
+    const tokRes = providedToken ? null : await fetch("https://github.com/login/oauth/access_token", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({
@@ -54,8 +59,7 @@ export default async function handler(req, res) {
         code,
       }),
     });
-    const tok = await tokRes.json();
-    const token = tok.access_token;
+    const token = providedToken || (await tokRes.json()).access_token;
     if (!token) return res.status(200).json({ verified: false, reason: "token exchange failed" });
 
     // 2) identify the authenticated user (for the badge label)

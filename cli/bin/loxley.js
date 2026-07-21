@@ -2,6 +2,7 @@
 import { Command } from "commander";
 import { login, status, logout } from "../src/commands/auth.js";
 import { register } from "../src/commands/register.js";
+import { verify } from "../src/commands/verify.js";
 import { remoteConfig, SITE } from "../src/remote.js";
 import { makeClient, readRepos } from "../src/chain.js";
 
@@ -25,6 +26,12 @@ program
   .option("-n, --supply <amount>", "initial supply")
   .option("-l, --language <language>", "primary language")
   .action(register);
+
+program
+  .command("verify")
+  .argument("<repo>", "GitHub URL or owner/name")
+  .description("Record the Verified ✓ badge for a repo you own")
+  .action(verify);
 
 program
   .command("quiver")
